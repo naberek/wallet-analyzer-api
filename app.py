@@ -105,7 +105,7 @@ def contract_engagers():
                 "address": contract_address,
                 "page": 1,
                 "perPage": 100,
-                "direction": "both"  # get both incoming and outgoing txs
+                "direction": "both"
             }
         ]
     }
@@ -119,6 +119,59 @@ def contract_engagers():
     from_wallets = {tx.get("from") for tx in txs if tx.get("from")}
 
     return jsonify(sorted(from_wallets))
+
+@app.route('/wallet-nfts', methods=['POST'])
+def wallet_nfts():
+    data = request.get_json()
+    wallet_address = data.get("wallet_address")
+
+    if not wallet_address:
+        return jsonify({"error": "Wallet address is required"}), 400
+
+    payload = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "qn_getWalletNFTs",
+        "params": [{
+            "wallet": wallet_address,
+            "omitMetadata": False
+        }]
+    }
+
+    response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to fetch wallet NFTs"}), 500
+
+    nfts = response.json().get("result", {}).get("assets", [])
+
+    return jsonify(nfts)
+
+@app.route('/token-holders', methods=['POST'])
+def token_holders():
+    data = request.get_json()
+    token_address = data.get("token_address")
+
+    if not token_address:
+        return jsonify({"error": "Token address is required"}), 400
+
+    payload = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "qn_getTokenHolders",
+        "params": [{
+            "contract": token_address
+        }]
+    }
+
+    response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to fetch token holders"}), 500
+
+    holders = response.json().get("result", {}).get("holders", [])
+
+    return jsonify(holders)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
