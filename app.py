@@ -35,7 +35,7 @@ def query_wallets():
         if eth_response.status_code == 200:
             eth_result = eth_response.json().get("result")
             if eth_result:
-                eth_balance = int(eth_result, 16) / (10 ** 18)  # ETH balance in ETH units
+                eth_balance = int(eth_result, 16) / (10 ** 18)
 
         # Fetch ERC-20 token balances
         payload = {
@@ -55,7 +55,6 @@ def query_wallets():
             filtered_tokens = []
             total_usd = 0
 
-            # Include ETH as a pseudo-token
             eth_price_usd = fetch_eth_usd_price()
             eth_quote = eth_balance * eth_price_usd
             if eth_quote > min_token_value:
@@ -87,8 +86,39 @@ def query_wallets():
     return jsonify(results)
 
 def fetch_eth_usd_price():
-    # Temporary static price, ideally this should fetch live price from a reliable API
-    return 3000.0  # Example: assume 1 ETH = $3000
+    return 3000.0
+
+@app.route('/contract-engagers', methods=['POST'])
+def contract_engagers():
+    data = request.get_json()
+    contract_address = data.get("contract_address")
+
+    if not contract_address:
+        return jsonify({"error": "Contract address is required"}), 400
+
+    payload = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "qn_getTransactionsByAddress",
+        "params": [
+            {
+                "address": contract_address,
+                "page": 1,
+                "perPage": 100,
+                "direction": "both"  # get both incoming and outgoing txs
+            }
+        ]
+    }
+
+    response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to fetch contract transactions"}), 500
+
+    txs = response.json().get("result", {}).get("transactions", [])
+    from_wallets = {tx.get("from") for tx in txs if tx.get("from")}
+
+    return jsonify(sorted(from_wallets))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
