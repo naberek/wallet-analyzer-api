@@ -23,8 +23,23 @@ def query_wallets():
     results = {}
 
     for address in wallet_addresses:
-        payload = {
+        # Fetch ETH balance
+        eth_payload = {
             "id": 1,
+            "jsonrpc": "2.0",
+            "method": "eth_getBalance",
+            "params": [address, "latest"]
+        }
+        eth_response = requests.post(QUICKNODE_URL, headers=HEADERS, json=eth_payload)
+        eth_balance = 0.0
+        if eth_response.status_code == 200:
+            eth_result = eth_response.json().get("result")
+            if eth_result:
+                eth_balance = int(eth_result, 16) / (10 ** 18)  # ETH balance in ETH units
+
+        # Fetch ERC-20 token balances
+        payload = {
+            "id": 2,
             "jsonrpc": "2.0",
             "method": "qn_getWalletTokenBalances",
             "params": [{
@@ -39,9 +54,21 @@ def query_wallets():
             tokens = response.json().get("result", {}).get("assets", [])
             filtered_tokens = []
             total_usd = 0
+
+            # Include ETH as a pseudo-token
+            eth_price_usd = fetch_eth_usd_price()
+            eth_quote = eth_balance * eth_price_usd
+            if eth_quote > min_token_value:
+                filtered_tokens.append({
+                    "symbol": "ETH",
+                    "balance": eth_balance,
+                    "quote_usd": eth_quote
+                })
+                total_usd += eth_quote
+
             for token in tokens:
                 symbol = token.get("assetSymbol")
-                quote = float(token.get("value", 0))  # Use value in USD if available
+                quote = float(token.get("value", 0))
                 if quote > min_token_value and (not token_symbol_filter or symbol == token_symbol_filter):
                     filtered_tokens.append({
                         "symbol": symbol,
@@ -58,6 +85,10 @@ def query_wallets():
             results[address] = {"error": f"Failed to fetch data for {address}"}
 
     return jsonify(results)
+
+def fetch_eth_usd_price():
+    # Temporary static price, ideally this should fetch live price from a reliable API
+    return 3000.0  # Example: assume 1 ETH = $3000
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
