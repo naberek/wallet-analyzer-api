@@ -172,9 +172,12 @@ def token_holders():
     holders = response.json().get("result", {}).get("holders", [])
 
     return jsonify(holders)
+from flask import Flask, request, jsonify, Response
+import json
+
 @app.route('/openapi.json', methods=['GET'])
 def openapi():
-    return jsonify({
+    openapi_spec = {
         "openapi": "3.0.0",
         "info": {
             "title": "Wallet Analyzer API",
@@ -186,7 +189,7 @@ def openapi():
                 "post": {
                     "summary": "Get token and ETH balances for a list of wallets.",
                     "requestBody": {
-                        "required": true,
+                        "required": True,
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -194,75 +197,89 @@ def openapi():
                                     "properties": {
                                         "wallets": {
                                             "type": "array",
-                                            "items": {"type": "string"}
+                                            "items": { "type": "string" }
                                         },
-                                        "token_symbol": {"type": "string"},
-                                        "min_token_value": {"type": "number"}
+                                        "token_symbol": { "type": "string" },
+                                        "min_token_value": { "type": "number" }
                                     },
                                     "required": ["wallets"]
                                 }
                             }
                         }
                     },
-                    "responses": {"200": {"description": "Wallet balances and holdings"}}
+                    "responses": {
+                        "200": { "description": "Wallet balances and holdings" }
+                    }
                 }
             },
             "/contract-engagers": {
                 "post": {
                     "summary": "Get list of wallets that interacted with a specific contract.",
                     "requestBody": {
-                        "required": true,
+                        "required": True,
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
-                                    "properties": {"contract_address": {"type": "string"}},
+                                    "properties": { "contract_address": { "type": "string" } },
                                     "required": ["contract_address"]
                                 }
                             }
                         }
                     },
-                    "responses": {"200": {"description": "List of wallet addresses"}}
+                    "responses": {
+                        "200": { "description": "List of wallet addresses" }
+                    }
                 }
             },
             "/wallet-nfts": {
                 "post": {
                     "summary": "Get NFTs owned by a specific wallet.",
                     "requestBody": {
-                        "required": true,
+                        "required": True,
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
-                                    "properties": {"wallet_address": {"type": "string"}},
+                                    "properties": { "wallet_address": { "type": "string" } },
                                     "required": ["wallet_address"]
                                 }
                             }
                         }
                     },
-                    "responses": {"200": {"description": "List of NFTs owned by wallet"}}
+                    "responses": {
+                        "200": { "description": "List of NFTs owned by wallet" }
+                    }
                 }
             },
             "/token-holders": {
                 "post": {
                     "summary": "Get wallets that hold a specific ERC-20 token.",
                     "requestBody": {
-                        "required": true,
+                        "required": True,
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
-                                    "properties": {"token_address": {"type": "string"}},
+                                    "properties": { "token_address": { "type": "string" } },
                                     "required": ["token_address"]
                                 }
                             }
                         }
                     },
-                    "responses": {"200": {"description": "List of token holders"}}
+                    "responses": {
+                        "200": { "description": "List of token holders" }
+                    }
                 }
             }
         }
-    })
+    }
+
+    return Response(
+        response=json.dumps(openapi_spec),
+        status=200,
+        mimetype='application/json'
+    )
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
