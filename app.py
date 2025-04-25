@@ -1,11 +1,9 @@
-
 from flask import Flask, request, jsonify
 import requests
-import os
 
 app = Flask(__name__)
 
-# Set your QuickNode endpoint with Token API enabled
+# Your QuickNode endpoint with GoldRush Wallet API enabled
 QUICKNODE_URL = "https://wandering-light-bird.quiknode.pro/0bec0c052dd2b98f5aa131b2c62e7290d2e28a39/"
 
 HEADERS = {
@@ -28,18 +26,22 @@ def query_wallets():
         payload = {
             "id": 1,
             "jsonrpc": "2.0",
-            "method": "qn_getWalletTokenBalance",
-            "params": [{"wallet": address}]
+            "method": "qn_getWalletTokenBalances",
+            "params": [{
+                "wallet": address,
+                "omitMetadata": False
+            }]
         }
+
         response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
         if response.status_code == 200:
-            tokens = response.json().get("result", [])
+            tokens = response.json().get("result", {}).get("assets", [])
             filtered_tokens = []
             total_usd = 0
             for token in tokens:
-                symbol = token.get("symbol")
-                quote = float(token.get("value_usd", 0))
+                symbol = token.get("assetSymbol")
+                quote = float(token.get("value", 0))  # Use value in USD if available
                 if quote > min_token_value and (not token_symbol_filter or symbol == token_symbol_filter):
                     filtered_tokens.append({
                         "symbol": symbol,
