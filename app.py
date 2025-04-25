@@ -172,6 +172,97 @@ def token_holders():
     holders = response.json().get("result", {}).get("holders", [])
 
     return jsonify(holders)
+@app.route('/openapi.json', methods=['GET'])
+def openapi():
+    return jsonify({
+        "openapi": "3.0.0",
+        "info": {
+            "title": "Wallet Analyzer API",
+            "version": "1.0.0",
+            "description": "Query Ethereum wallet balances, token holders, NFTs, and contract interactions using QuickNode-powered APIs."
+        },
+        "paths": {
+            "/query-wallets": {
+                "post": {
+                    "summary": "Get token and ETH balances for a list of wallets.",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "wallets": {
+                                            "type": "array",
+                                            "items": {"type": "string"}
+                                        },
+                                        "token_symbol": {"type": "string"},
+                                        "min_token_value": {"type": "number"}
+                                    },
+                                    "required": ["wallets"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {"200": {"description": "Wallet balances and holdings"}}
+                }
+            },
+            "/contract-engagers": {
+                "post": {
+                    "summary": "Get list of wallets that interacted with a specific contract.",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"contract_address": {"type": "string"}},
+                                    "required": ["contract_address"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {"200": {"description": "List of wallet addresses"}}
+                }
+            },
+            "/wallet-nfts": {
+                "post": {
+                    "summary": "Get NFTs owned by a specific wallet.",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"wallet_address": {"type": "string"}},
+                                    "required": ["wallet_address"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {"200": {"description": "List of NFTs owned by wallet"}}
+                }
+            },
+            "/token-holders": {
+                "post": {
+                    "summary": "Get wallets that hold a specific ERC-20 token.",
+                    "requestBody": {
+                        "required": true,
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {"token_address": {"type": "string"}},
+                                    "required": ["token_address"]
+                                }
+                            }
+                        }
+                    },
+                    "responses": {"200": {"description": "List of token holders"}}
+                }
+            }
+        }
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
