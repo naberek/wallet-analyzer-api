@@ -5,7 +5,7 @@ import json
 app = Flask(__name__)
 
 # Your QuickNode endpoint with GoldRush Wallet API enabled
-QUICKNODE_URL = "https://wandering-light-bird.quiknode.pro/0bec0c052dd2b98f5aa131b2c62e7290d2e28a39/"
+QUICKNODE_URL = "https://capable-dawn-lake.quiknode.pro/147c372f7d012a45c55f23425476d7a1966a385a/"
 
 HEADERS = {
     "Content-Type": "application/json"
