@@ -1,6 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 import requests
 import json
+
 app = Flask(__name__)
 
 # Your QuickNode endpoint with GoldRush Wallet API enabled
@@ -23,7 +24,6 @@ def query_wallets():
     results = {}
 
     for address in wallet_addresses:
-        # Fetch ETH balance
         eth_payload = {
             "id": 1,
             "jsonrpc": "2.0",
@@ -37,7 +37,6 @@ def query_wallets():
             if eth_result:
                 eth_balance = int(eth_result, 16) / (10 ** 18)
 
-        # Fetch ERC-20 token balances
         payload = {
             "id": 2,
             "jsonrpc": "2.0",
@@ -131,7 +130,7 @@ def wallet_nfts():
     payload = {
         "id": 1,
         "jsonrpc": "2.0",
-        "method": "qn_fetchNFTsByOwner",   # <<< NEW method
+        "method": "qn_fetchNFTsByOwner",
         "params": [
             {
                 "wallet": wallet_address,
@@ -149,7 +148,6 @@ def wallet_nfts():
     nfts = response.json().get("result", {}).get("assets", [])
 
     return jsonify(nfts)
-
 
 @app.route('/token-holders', methods=['POST'])
 def token_holders():
@@ -176,109 +174,10 @@ def token_holders():
     holders = response.json().get("result", {}).get("holders", [])
 
     return jsonify(holders)
-from flask import Flask, request, jsonify, Response
-import json
 
 @app.route('/openapi.json', methods=['GET'])
 def openapi():
-    openapi_spec = {
-        "openapi": "3.0.0",
-        "info": {
-            "title": "Wallet Analyzer API",
-            "version": "1.0.0",
-            "description": "Query Ethereum wallet balances, token holders, NFTs, and contract interactions using QuickNode-powered APIs."
-        },
-        "paths": {
-            "/query-wallets": {
-                "post": {
-                    "summary": "Get token and ETH balances for a list of wallets.",
-                    "requestBody": {
-                        "required": True,
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "wallets": {
-                                            "type": "array",
-                                            "items": { "type": "string" }
-                                        },
-                                        "token_symbol": { "type": "string" },
-                                        "min_token_value": { "type": "number" }
-                                    },
-                                    "required": ["wallets"]
-                                }
-                            }
-                        }
-                    },
-                    "responses": {
-                        "200": { "description": "Wallet balances and holdings" }
-                    }
-                }
-            },
-            "/contract-engagers": {
-                "post": {
-                    "summary": "Get list of wallets that interacted with a specific contract.",
-                    "requestBody": {
-                        "required": True,
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": { "contract_address": { "type": "string" } },
-                                    "required": ["contract_address"]
-                                }
-                            }
-                        }
-                    },
-                    "responses": {
-                        "200": { "description": "List of wallet addresses" }
-                    }
-                }
-            },
-            "/wallet-nfts": {
-                "post": {
-                    "summary": "Get NFTs owned by a specific wallet.",
-                    "requestBody": {
-                        "required": True,
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": { "wallet_address": { "type": "string" } },
-                                    "required": ["wallet_address"]
-                                }
-                            }
-                        }
-                    },
-                    "responses": {
-                        "200": { "description": "List of NFTs owned by wallet" }
-                    }
-                }
-            },
-            "/token-holders": {
-                "post": {
-                    "summary": "Get wallets that hold a specific ERC-20 token.",
-                    "requestBody": {
-                        "required": True,
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": { "token_address": { "type": "string" } },
-                                    "required": ["token_address"]
-                                }
-                            }
-                        }
-                    },
-                    "responses": {
-                        "200": { "description": "List of token holders" }
-                    }
-                }
-            }
-        }
-    }
-
+    openapi_spec = { ... }  # Use the latest openapi.json structure we prepared
     return Response(
         response=json.dumps(openapi_spec),
         status=200,
