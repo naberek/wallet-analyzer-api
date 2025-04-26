@@ -131,14 +131,14 @@ def wallet_nfts():
     payload = {
         "id": 1,
         "jsonrpc": "2.0",
-        "method": "qn_getWalletNFTs",
-        "params": [{
-            "wallet": wallet_address,
-                "omitMetadata": False,
-                "contracts": [],
-                "page": 1,
-                "perPage": 100
-        }]
+        "method": "qn_fetchNFTsByOwner",   # <<< NEW method
+        "params": [
+            {
+                "wallet": wallet_address,
+                "perPage": 100,
+                "page": 1
+            }
+        ]
     }
 
     response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
@@ -149,6 +149,7 @@ def wallet_nfts():
     nfts = response.json().get("result", {}).get("assets", [])
 
     return jsonify(nfts)
+
 
 @app.route('/token-holders', methods=['POST'])
 def token_holders():
