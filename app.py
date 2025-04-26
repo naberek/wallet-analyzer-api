@@ -131,7 +131,7 @@ def wallet_nfts():
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    # First try QuickNode
+    # Try QuickNode first
     payload = {
         "id": 1,
         "jsonrpc": "2.0",
@@ -146,12 +146,15 @@ def wallet_nfts():
     }
     quicknode_response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
+    print("--- QUICKNODE RESPONSE ---")
+    print(quicknode_response.text)
+
     if quicknode_response.status_code == 200:
         quicknode_nfts = quicknode_response.json().get("result", {}).get("assets", [])
         if quicknode_nfts:
             return jsonify(quicknode_nfts)
 
-    # If QuickNode failed or returned empty, try Moralis
+    # If QuickNode failed or empty, try Moralis
     moralis_url = f"https://deep-index.moralis.io/api/v2/{wallet_address}/nft?chain=eth&format=decimal"
 
     moralis_headers = {
@@ -160,6 +163,9 @@ def wallet_nfts():
     }
 
     moralis_response = requests.get(moralis_url, headers=moralis_headers)
+
+    print("--- MORALIS RESPONSE ---")
+    print(moralis_response.text)
 
     if moralis_response.status_code != 200:
         return jsonify({"error": "Failed to fetch NFTs from both QuickNode and Moralis"}), 500
@@ -170,6 +176,7 @@ def wallet_nfts():
         return jsonify({"message": "No NFTs found for this wallet."})
 
     return jsonify(moralis_nfts)
+
 
 
 @app.route('/token-holders', methods=['POST'])
