@@ -127,27 +127,37 @@ def wallet_nfts():
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    payload = {
-        "id": 1,
-        "jsonrpc": "2.0",
-        "method": "qn_fetchNFTsByOwner",
-        "params": [
-            {
-                "wallet": wallet_address,
-                "perPage": 100,
-                "page": 1
-            }
-        ]
-    }
+    nfts_collected = []
+    for page in range(1, 3):  # Try pages 1 and 2
+        payload = {
+            "id": 1,
+            "jsonrpc": "2.0",
+            "method": "qn_fetchNFTsByOwner",
+            "params": [
+                {
+                    "wallet": wallet_address,
+                    "perPage": 50,  # You can adjust to 100 if you prefer
+                    "page": page
+                }
+            ]
+        }
 
-    response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
+        response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
-    if response.status_code != 200:
-        return jsonify({"error": "Failed to fetch wallet NFTs"}), 500
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to fetch wallet NFTs"}), 500
 
-    nfts = response.json().get("result", {}).get("assets", [])
+        page_nfts = response.json().get("result", {}).get("assets", [])
+        nfts_collected.extend(page_nfts)
 
-    return jsonify(nfts)
+        if len(page_nfts) == 0:
+            break  # Stop early if no NFTs on current page
+
+    if not nfts_collected:
+        return jsonify({"message": "No NFTs found for this wallet."})
+
+    return jsonify(nfts_collected)
+
 
 @app.route('/token-holders', methods=['POST'])
 def token_holders():
