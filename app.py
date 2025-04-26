@@ -174,7 +174,7 @@ def wallet_nfts():
 
     if not moralis_nfts:
         return jsonify({"message": "No NFTs found for this wallet."})
-
+limited_nfts = moralis_nfts[:10]
     return jsonify(moralis_nfts)
 
 
