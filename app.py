@@ -1,11 +1,17 @@
 from flask import Flask, request, jsonify, Response
 import requests
+import os
 import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
-# Your QuickNode endpoint with GoldRush Wallet API enabled
-QUICKNODE_URL = "https://capable-dawn-lake.quiknode.pro/147c372f7d012a45c55f23425476d7a1966a385a/"
+# Load your QuickNode and Moralis API keys
+QUICKNODE_URL = os.getenv("QUICKNODE_URL")
+MORALIS_API_KEY = os.getenv("MORALIS_API_KEY")
 
 HEADERS = {
     "Content-Type": "application/json"
@@ -24,6 +30,7 @@ def query_wallets():
     results = {}
 
     for address in wallet_addresses:
+        # Fetch ETH balance
         eth_payload = {
             "id": 1,
             "jsonrpc": "2.0",
@@ -37,6 +44,7 @@ def query_wallets():
             if eth_result:
                 eth_balance = int(eth_result, 16) / (10 ** 18)
 
+        # Fetch ERC-20 token balances
         payload = {
             "id": 2,
             "jsonrpc": "2.0",
@@ -46,7 +54,6 @@ def query_wallets():
                 "omitMetadata": False
             }]
         }
-
         response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
         if response.status_code == 200:
@@ -85,7 +92,7 @@ def query_wallets():
     return jsonify(results)
 
 def fetch_eth_usd_price():
-    return 3000.0
+    return 3000.0  # Placeholder for now
 
 @app.route('/contract-engagers', methods=['POST'])
 def contract_engagers():
@@ -108,7 +115,6 @@ def contract_engagers():
             }
         ]
     }
-
     response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
     if response.status_code != 200:
@@ -118,10 +124,6 @@ def contract_engagers():
     from_wallets = {tx.get("from") for tx in txs if tx.get("from")}
 
     return jsonify(sorted(from_wallets))
-
-import os
-
-MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImVlMWE5YWQ2LWNlOTEtNDEzZS1iYTA2LWYwNjRmMmIxYTI2NCIsIm9yZ0lkIjoiNDQzODc4IiwidXNlcklkIjoiNDU2Njk2IiwidHlwZUlkIjoiYzk4MTZhNmItZWJjMi00Njc4LTgzYmEtMDViNTI2MDYzZDc1IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDU2MzE3NzQsImV4cCI6NDkwMTM5MTc3NH0.-vEV7VYyt2SjkxOksxJD3TeDo71_q6y0dac6veiLzEo"  # Or hardcode for now if needed
 
 @app.route('/wallet-nfts', methods=['POST'])
 def wallet_nfts():
@@ -146,13 +148,11 @@ def wallet_nfts():
     }
     quicknode_response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
-    print("--- QUICKNODE RESPONSE ---")
-    print(quicknode_response.text)
-
     if quicknode_response.status_code == 200:
         quicknode_nfts = quicknode_response.json().get("result", {}).get("assets", [])
         if quicknode_nfts:
-            return jsonify(quicknode_nfts)
+            limited_quicknode_nfts = quicknode_nfts[:10]
+            return jsonify(limited_quicknode_nfts)
 
     # If QuickNode failed or empty, try Moralis
     moralis_url = f"https://deep-index.moralis.io/api/v2/{wallet_address}/nft?chain=eth&format=decimal"
@@ -164,9 +164,6 @@ def wallet_nfts():
 
     moralis_response = requests.get(moralis_url, headers=moralis_headers)
 
-    print("--- MORALIS RESPONSE ---")
-    print(moralis_response.text)
-
     if moralis_response.status_code != 200:
         return jsonify({"error": "Failed to fetch NFTs from both QuickNode and Moralis"}), 500
 
@@ -174,10 +171,9 @@ def wallet_nfts():
 
     if not moralis_nfts:
         return jsonify({"message": "No NFTs found for this wallet."})
-limited_nfts = moralis_nfts[:10]
-    return jsonify(moralis_nfts)
 
-
+    limited_moralis_nfts = moralis_nfts[:10]
+    return jsonify(limited_moralis_nfts)
 
 @app.route('/token-holders', methods=['POST'])
 def token_holders():
@@ -191,23 +187,19 @@ def token_holders():
         "id": 1,
         "jsonrpc": "2.0",
         "method": "qn_getTokenHolders",
-        "params": [{
-            "contract": token_address
-        }]
+        "params": [{ "contract": token_address }]
     }
-
     response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to fetch token holders"}), 500
 
     holders = response.json().get("result", {}).get("holders", [])
-
     return jsonify(holders)
 
 @app.route('/openapi.json', methods=['GET'])
 def openapi():
-    openapi_spec = { ... }  # Use the latest openapi.json structure we prepared
+    openapi_spec = { ... }  # (Use your latest openapi_fixed.json content here)
     return Response(
         response=json.dumps(openapi_spec),
         status=200,
