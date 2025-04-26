@@ -119,6 +119,10 @@ def contract_engagers():
 
     return jsonify(sorted(from_wallets))
 
+import os
+
+MORALIS_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6ImVlMWE5YWQ2LWNlOTEtNDEzZS1iYTA2LWYwNjRmMmIxYTI2NCIsIm9yZ0lkIjoiNDQzODc4IiwidXNlcklkIjoiNDU2Njk2IiwidHlwZUlkIjoiYzk4MTZhNmItZWJjMi00Njc4LTgzYmEtMDViNTI2MDYzZDc1IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDU2MzE3NzQsImV4cCI6NDkwMTM5MTc3NH0.-vEV7VYyt2SjkxOksxJD3TeDo71_q6y0dac6veiLzEo"  # Or hardcode for now if needed
+
 @app.route('/wallet-nfts', methods=['POST'])
 def wallet_nfts():
     data = request.get_json()
@@ -127,36 +131,45 @@ def wallet_nfts():
     if not wallet_address:
         return jsonify({"error": "Wallet address is required"}), 400
 
-    nfts_collected = []
-    for page in range(1, 3):  # Try pages 1 and 2
-        payload = {
-            "id": 1,
-            "jsonrpc": "2.0",
-            "method": "qn_fetchNFTsByOwner",
-            "params": [
-                {
-                    "wallet": wallet_address,
-                    "perPage": 50,  # You can adjust to 100 if you prefer
-                    "page": page
-                }
-            ]
-        }
+    # First try QuickNode
+    payload = {
+        "id": 1,
+        "jsonrpc": "2.0",
+        "method": "qn_fetchNFTsByOwner",
+        "params": [
+            {
+                "wallet": wallet_address,
+                "perPage": 50,
+                "page": 1
+            }
+        ]
+    }
+    quicknode_response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
 
-        response = requests.post(QUICKNODE_URL, headers=HEADERS, json=payload)
+    if quicknode_response.status_code == 200:
+        quicknode_nfts = quicknode_response.json().get("result", {}).get("assets", [])
+        if quicknode_nfts:
+            return jsonify(quicknode_nfts)
 
-        if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch wallet NFTs"}), 500
+    # If QuickNode failed or returned empty, try Moralis
+    moralis_url = f"https://deep-index.moralis.io/api/v2/{wallet_address}/nft?chain=eth&format=decimal"
 
-        page_nfts = response.json().get("result", {}).get("assets", [])
-        nfts_collected.extend(page_nfts)
+    moralis_headers = {
+        "accept": "application/json",
+        "X-API-Key": MORALIS_API_KEY
+    }
 
-        if len(page_nfts) == 0:
-            break  # Stop early if no NFTs on current page
+    moralis_response = requests.get(moralis_url, headers=moralis_headers)
 
-    if not nfts_collected:
+    if moralis_response.status_code != 200:
+        return jsonify({"error": "Failed to fetch NFTs from both QuickNode and Moralis"}), 500
+
+    moralis_nfts = moralis_response.json().get("result", [])
+
+    if not moralis_nfts:
         return jsonify({"message": "No NFTs found for this wallet."})
 
-    return jsonify(nfts_collected)
+    return jsonify(moralis_nfts)
 
 
 @app.route('/token-holders', methods=['POST'])
