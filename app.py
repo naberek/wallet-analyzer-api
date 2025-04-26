@@ -134,7 +134,10 @@ def wallet_nfts():
         "method": "qn_getWalletNFTs",
         "params": [{
             "wallet": wallet_address,
-            "omitMetadata": False
+                "omitMetadata": False,
+                "contracts": [],
+                "page": 1,
+                "perPage": 100
         }]
     }
 
